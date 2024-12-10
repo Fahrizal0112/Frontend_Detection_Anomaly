@@ -38,7 +38,7 @@ function App() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:4000/detect_anomaly');
+      const response = await axios.get('http://8.215.199.5:5000/detect_anomaly');
       setData(response.data);
       setError(null);
     } catch (err) {
