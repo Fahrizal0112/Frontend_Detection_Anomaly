@@ -141,9 +141,9 @@ function App() {
                   <th className={`p-2 text-xs font-medium uppercase ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                     Status
                   </th>
-                  <th className={`p-2 text-xs font-medium uppercase ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                  {/* <th className={`p-2 text-xs font-medium uppercase ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                     Severity
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
@@ -197,9 +197,9 @@ function App() {
                         {tx.is_anomaly ? 'Anomaly' : 'Normal'}
                       </span>
                     </td>
-                    <td className={`p-2 text-sm text-center font-medium ${getSeverityClass(tx.severity, darkMode)}`}>
+                    {/* <td className={`p-2 text-sm text-center font-medium ${getSeverityClass(tx.severity, darkMode)}`}>
                       {tx.severity}
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
               </tbody>
