@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { SunIcon, MoonIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
+import * as d3 from 'd3';
 
 const getSeverityClass = (severity, isDark) => {
   switch (severity) {
@@ -12,6 +13,98 @@ const getSeverityClass = (severity, isDark) => {
     case 'VERY-LOW': return isDark ? 'text-green-400' : 'text-green-500';
     default: return isDark ? 'text-gray-400' : 'text-gray-500';
   }
+};
+
+const HyperSphereVisualization = ({ data, darkMode }) => {
+  const svgRef = useRef();
+
+  useEffect(() => {
+    if (!data?.transactions) return;
+
+    // Setup dimensi
+    const width = 400;
+    const height = 400;
+    const radius = Math.min(width, height) / 2 - 40;
+    const innerRadius = radius * 0.6; // Radius lingkaran dalam yang lebih kecil
+
+    // Hapus SVG yang ada
+    d3.select(svgRef.current).selectAll("*").remove();
+
+    // Buat SVG baru
+    const svg = d3.select(svgRef.current)
+      .attr("width", width)
+      .attr("height", height);
+
+    // Buat grup untuk center
+    const g = svg.append("g")
+      .attr("transform", `translate(${width/2},${height/2})`);
+
+    // Gambar lingkaran luar (batas hypersphere)
+    g.append("circle")
+      .attr("r", innerRadius) // Gunakan radius yang lebih kecil
+      .attr("fill", "none")
+      .attr("stroke", darkMode ? "#4B5563" : "#E5E7EB")
+      .attr("stroke-width", 2);
+
+    // Konversi data anomaly ke koordinat polar
+    const points = data.transactions.map(tx => {
+      const score = parseFloat(tx.anomaly_percentage);
+      const angle = Math.random() * 2 * Math.PI; // Random angle
+      const distance = tx.is_anomaly ? 
+        (innerRadius + (score / 100) * (radius - innerRadius)) : // Anomali di luar lingkaran
+        ((score / 100) * innerRadius * 0.9); // Normal di dalam lingkaran
+      
+      return {
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance,
+        score: score,
+        isAnomaly: tx.is_anomaly
+      };
+    });
+
+    // Gambar titik-titik
+    g.selectAll("circle.point")
+      .data(points)
+      .enter()
+      .append("circle")
+      .attr("class", "point")
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y)
+      .attr("r", 5)
+      .attr("fill", d => d.isAnomaly ? 
+        (darkMode ? "#EF4444" : "#DC2626") : 
+        (darkMode ? "#10B981" : "#059669"))
+      .attr("opacity", 0.7)
+      .on("mouseover", function(event, d) {
+        d3.select(this)
+          .attr("r", 8)
+          .attr("opacity", 1);
+
+        // Tambah tooltip
+        g.append("text")
+          .attr("class", "tooltip")
+          .attr("x", d.x + 10)
+          .attr("y", d.y - 10)
+          .attr("fill", darkMode ? "#E5E7EB" : "#1F2937")
+          .text(`Score: ${d.score.toFixed(2)}`);
+      })
+      .on("mouseout", function() {
+        d3.select(this)
+          .attr("r", 5)
+          .attr("opacity", 0.7);
+        g.selectAll(".tooltip").remove();
+      });
+
+  }, [data, darkMode]);
+
+  return (
+    <div className={`rounded-lg shadow-lg p-4 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+      <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+        Hypersphere Visualization
+      </h2>
+      <svg ref={svgRef}></svg>
+    </div>
+  );
 };
 
 function App() {
@@ -42,7 +135,7 @@ function App() {
       setData(response.data);
       setError(null);
     } catch (err) {
-      setError('Error fetching data');
+      setError('Error fetching data, please refresh the page');
       console.error(err);
     } finally {
       setLoading(false);
@@ -102,6 +195,21 @@ function App() {
           </div>
           <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             Total Transactions: {data?.total_transactions || 0}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <HyperSphereVisualization data={data} darkMode={darkMode} />
+          
+          {/* Statistik tambahan bisa ditambahkan di sini */}
+          <div className={`rounded-lg shadow-lg p-4 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              Statistics
+            </h2>
+            <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p>Total Transactions: {data?.total_transactions || 0}</p>
+              <p>Anomalies: {data?.transactions?.filter(tx => tx.is_anomaly).length || 0}</p>
+            </div>
           </div>
         </div>
 
